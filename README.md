@@ -6,6 +6,12 @@ Backend technical assessment project for processing high-volume product and inve
 
 The API accepts product batch updates quickly, validates the request, stores a durable batch record, and processes the actual product updates asynchronously in the background. The design is tenant-aware, idempotent, and ready for RabbitMQ, Redis, PostgreSQL, and Docker-based local infrastructure.
 
+Assessment checklist:
+
+```text
+docs/ASSESSMENT_REQUIREMENTS.md
+```
+
 ## Planned Request Flow
 
 ```text

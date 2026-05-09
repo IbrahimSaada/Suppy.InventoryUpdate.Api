@@ -4,6 +4,8 @@
 
 Multiple tenants send high-volume product updates. Each update contains an `itemId`, `price`, `stock`, and optional metadata. The backend must accept large batches without blocking the API request, avoid duplicate processing, keep product data consistent, and isolate tenants from each other.
 
+The implementation checklist is maintained in `docs/ASSESSMENT_REQUIREMENTS.md`.
+
 ## Proposed Architecture
 
 ```text
