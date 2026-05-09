@@ -48,6 +48,21 @@ Domain has no dependency on infrastructure. Application depends on contracts and
 10. Products are upserted by `(TenantId, ItemId)`.
 11. Batch status becomes `Completed`, `PartiallyFailed`, or `Failed`.
 
+## Application Use Case
+
+The first use case is `SubmitProductBatchUpdateCommand`.
+
+It is intentionally limited to acceptance work:
+
+- validate tenant id, item count, item id, price, stock, and metadata size
+- normalize tenant and item identifiers through domain value objects
+- check existing batch by `(TenantId, IdempotencyKey)` when an idempotency key is provided
+- create `ProductUpdateBatch` and child `ProductUpdateBatchItem` rows
+- publish `ProductBatchUpdateAcceptedIntegrationEvent`
+- return the accepted `batchId` and status
+
+It does not update `Product` rows directly. Product updates are handled by the background processor after the batch has been accepted.
+
 ## Data Flow
 
 ```text
