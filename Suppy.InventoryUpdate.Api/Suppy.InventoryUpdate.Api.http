@@ -1,6 +1,7 @@
 @Suppy.InventoryUpdate.Api_HostAddress = http://localhost:5253
 @accessToken = paste_access_token_here
 @batchId = paste_batch_id_here
+@tenantId = tenant_1
 
 ### Liveness
 GET {{Suppy.InventoryUpdate.Api_HostAddress}}/health/live
@@ -18,9 +19,10 @@ Accept: application/json
 POST {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products/batch-update
 Content-Type: application/json
 Idempotency-Key: tenant-1-batch-001
+X-Tenant-Id: {{tenantId}}
 
 {
-  "tenantId": "tenant_1",
+  "tenantId": "{{tenantId}}",
   "items": [
     {
       "itemId": "123",
@@ -38,17 +40,20 @@ Idempotency-Key: tenant-1-batch-001
 ### Check product batch status
 GET {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products/batches/{{batchId}}
 Accept: application/json
+X-Tenant-Id: {{tenantId}}
 
 ###
 
 ### Retry failed product batch items
 POST {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products/batches/{{batchId}}/retry
 Accept: application/json
+X-Tenant-Id: {{tenantId}}
 
 ###
 
 ### List products by tenant
-GET {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products?tenantId=tenant_1&page=1&pageSize=50
+GET {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products?tenantId={{tenantId}}&page=1&pageSize=50
 Accept: application/json
+X-Tenant-Id: {{tenantId}}
 
 ###

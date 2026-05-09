@@ -11,6 +11,7 @@ The implementation checklist is maintained in `docs/ASSESSMENT_REQUIREMENTS.md`.
 ```text
 Tenant client
   -> API endpoint
+  -> tenant rate limit
   -> validation
   -> tenant-scoped idempotency
   -> batch persistence
@@ -35,16 +36,17 @@ Domain has no dependency on infrastructure. Application depends on contracts and
 ## Request Flow
 
 1. Client calls `POST /api/products/batch-update`.
-2. API validates payload shape and batch limits.
-3. Application checks tenant-scoped idempotency.
-4. Application creates a `ProductUpdateBatch` and `ProductUpdateBatchItem` records.
-5. Application publishes an integration event through the outbox.
-6. Unit of Work commits batch rows and outbox row atomically.
-7. API returns `202 Accepted` with `batchId`.
-8. The DB-backed background worker polls accepted batch ids.
-9. The worker dispatches `ProcessProductBatchUpdateCommand` for each accepted batch.
-10. Products are upserted by `(TenantId, ItemId)`.
-11. Batch status becomes `Completed`, `PartiallyFailed`, or `Failed`.
+2. Tenant rate limiting checks the tenant partition.
+3. API validates payload shape and batch limits.
+4. Application checks tenant-scoped idempotency.
+5. Application creates a `ProductUpdateBatch` and `ProductUpdateBatchItem` records.
+6. Application publishes an integration event through the outbox.
+7. Unit of Work commits batch rows and outbox row atomically.
+8. API returns `202 Accepted` with `batchId`.
+9. The DB-backed background worker polls accepted batch ids.
+10. The worker dispatches `ProcessProductBatchUpdateCommand` for each accepted batch.
+11. Products are upserted by `(TenantId, ItemId)`.
+12. Batch status becomes `Completed`, `PartiallyFailed`, or `Failed`.
 
 RabbitMQ remains available as an optional transport for integration events. The core assessment flow does not require the HTTP request to wait on RabbitMQ.
 
@@ -149,8 +151,36 @@ Important rules:
 - Batches are unique by `(TenantId, IdempotencyKey)` when an idempotency key is provided.
 - Queries always include tenant filtering.
 - One tenant batch failure updates only that tenant batch.
+- Rate limiting is partitioned by tenant when tenant identity is available.
 
 In production, `TenantId` should normally come from an authenticated token, API key, or tenant routing layer. The assessment payload includes `tenantId`, so the simplified version accepts it from the request.
+
+## Tenant Rate Limiting
+
+Product endpoints use a tenant-aware fixed-window rate limiter.
+
+Partition resolution order:
+
+```text
+X-Tenant-Id header
+tenant_id JWT claim
+tenantId query string
+remote IP fallback
+```
+
+This prevents one tenant from consuming all product API capacity for other tenants. For the batch endpoint, clients should send `X-Tenant-Id` because infrastructure should rate-limit before reading and validating large request bodies. The body `tenantId` is still validated by the application layer and stored on tenant-owned rows.
+
+Current default:
+
+```text
+120 requests / 60 seconds / tenant partition
+```
+
+When the limit is exceeded, the API returns:
+
+```http
+429 Too Many Requests
+```
 
 ## Tenant Foundation
 
@@ -237,5 +267,7 @@ Clients should send the key through the `Idempotency-Key` header. The API also a
 
 - PostgreSQL for application data and outbox.
 - Redis for cache, locks, and idempotency support.
-- RabbitMQ for background processing.
+- RabbitMQ for optional integration-event transport.
 - Keycloak can be added for authenticated tenant identity and role-based permissions.
+
+Full local setup instructions are in `docs/LOCAL_INFRASTRUCTURE.md`.

@@ -6,13 +6,16 @@ using Suppy.InventoryUpdate.Api.Application.Features.Products.GetBatchStatus;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.ListProducts;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.RetryBatchUpdate;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.SubmitBatchUpdate;
+using Suppy.InventoryUpdate.Api.Infrastructure.RateLimiting;
 using Suppy.InventoryUpdate.Api.Presentation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Suppy.InventoryUpdate.Api.Controllers;
 
 [ApiController]
 [Route("api/products")]
+[EnableRateLimiting(TenantRateLimitingPolicyNames.Tenant)]
 public sealed class ProductsController : ControllerBase
 {
     private readonly IRequestDispatcher _dispatcher;

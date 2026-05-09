@@ -6,6 +6,7 @@ using Suppy.InventoryUpdate.Api.Infrastructure.Caching;
 using Suppy.InventoryUpdate.Api.Infrastructure.Messaging;
 using Suppy.InventoryUpdate.Api.Infrastructure.Observability;
 using Suppy.InventoryUpdate.Api.Infrastructure.Products;
+using Suppy.InventoryUpdate.Api.Infrastructure.RateLimiting;
 using Suppy.InventoryUpdate.Api.Infrastructure.Tenancy;
 using Suppy.InventoryUpdate.Api.Persistence;
 using Suppy.InventoryUpdate.Api.Security.DependencyInjection;
@@ -57,6 +58,7 @@ builder.Services.AddTemplateTenancy();
 builder.Services.AddTemplateSecurity(builder.Configuration);
 builder.Services.AddTemplateCaching(builder.Configuration);
 builder.Services.AddTemplateMessaging(builder.Configuration);
+builder.Services.AddTenantRateLimiting(builder.Configuration);
 builder.Services.AddHealthChecks().AddCheck(
     "self",
     () => HealthCheckResult.Healthy("Process is alive."),
@@ -85,6 +87,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 app.MapHealthChecks(
     "/health/live",

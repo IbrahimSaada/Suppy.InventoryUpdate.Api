@@ -1,0 +1,80 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: suppy-inventory-postgres
+    restart: unless-stopped
+    ports:
+      - "${SUPPY_POSTGRES_PORT:-5434}:5432"
+    environment:
+      POSTGRES_USER: ${SUPPY_POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${SUPPY_POSTGRES_PASSWORD:-ibrahim}
+      POSTGRES_DB: ${SUPPY_APP_DATABASE:-suppy_inventory_update}
+      SUPPY_APP_DATABASE: ${SUPPY_APP_DATABASE:-suppy_inventory_update}
+      SUPPY_KEYCLOAK_DATABASE: ${SUPPY_KEYCLOAK_DATABASE:-suppy_inventory_keycloak}
+    volumes:
+      - suppy_postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${SUPPY_POSTGRES_USER:-postgres} -d ${SUPPY_APP_DATABASE:-suppy_inventory_update}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: suppy-inventory-redis
+    restart: unless-stopped
+    ports:
+      - "${SUPPY_REDIS_PORT:-6379}:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: suppy-inventory-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "${SUPPY_RABBITMQ_PORT:-5672}:5672"
+      - "${SUPPY_RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${SUPPY_RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${SUPPY_RABBITMQ_PASSWORD:-guest}
+    volumes:
+      - suppy_rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.4
+    container_name: suppy-inventory-keycloak
+    restart: unless-stopped
+    ports:
+      - "${SUPPY_KEYCLOAK_PORT:-8088}:8080"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres
+      KC_DB_URL_PORT: 5432
+      KC_DB_URL_DATABASE: ${SUPPY_KEYCLOAK_DATABASE:-suppy_inventory_keycloak}
+      KC_DB_USERNAME: ${SUPPY_POSTGRES_USER:-postgres}
+      KC_DB_PASSWORD: ${SUPPY_POSTGRES_PASSWORD:-ibrahim}
+
+      # Bootstrap admin is for first startup only.
+      # After creating a permanent admin account, remove these values from .env
+      # and recreate the container to harden security.
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${SUPPY_KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${SUPPY_KEYCLOAK_ADMIN_PASSWORD:-ibrahim}
+    command: ["start-dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  suppy_postgres_data:
+  suppy_rabbitmq_data:

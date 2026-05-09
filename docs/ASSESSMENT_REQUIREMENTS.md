@@ -126,7 +126,8 @@ Current project decisions:
 - [x] products are created or updated in DB by `(TenantId, ItemId)`
 - [x] duplicate request with same tenant idempotency key does not create duplicate processing
 - [x] one tenant cannot affect another tenant's product rows
+- [x] tenant-aware rate limiting prevents one tenant from exhausting product API capacity
 - [x] background processing updates batch status
 - [x] failures are recorded and retryable
 - [x] README explains architecture, flow, failures, retries, idempotency, and tradeoffs
-- [ ] Docker/local infrastructure instructions are clear
+- [x] Docker/local infrastructure instructions are clear
