@@ -4,6 +4,7 @@ using Suppy.InventoryUpdate.Api.Abstractions.Results;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Errors;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Handlers;
 using Suppy.InventoryUpdate.Api.Domain.Products.Entities;
+using Suppy.InventoryUpdate.Api.Domain.Products.Enums;
 
 namespace Suppy.InventoryUpdate.Api.Application.Features.Products.GetBatchStatus;
 
@@ -53,6 +54,8 @@ internal sealed class GetProductBatchStatusQueryHandler
             batch.TotalItems,
             batch.ProcessedItems,
             batch.FailedItems,
+            batch.FailedItems > 0 &&
+            batch.Status is ProductUpdateBatchStatus.Failed or ProductUpdateBatchStatus.PartiallyFailed,
             batch.CreatedAtUtc,
             batch.ProcessingStartedAtUtc,
             batch.CompletedAtUtc,

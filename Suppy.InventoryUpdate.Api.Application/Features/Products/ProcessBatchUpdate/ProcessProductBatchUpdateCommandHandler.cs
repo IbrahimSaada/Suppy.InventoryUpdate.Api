@@ -4,6 +4,7 @@ using Suppy.InventoryUpdate.Api.Abstractions.Results;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Errors;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Handlers;
 using Suppy.InventoryUpdate.Api.Domain.Products.Entities;
+using Suppy.InventoryUpdate.Api.Domain.Products.Enums;
 
 namespace Suppy.InventoryUpdate.Api.Application.Features.Products.ProcessBatchUpdate;
 
@@ -46,16 +47,25 @@ internal sealed class ProcessProductBatchUpdateCommandHandler
             return Result<ProcessProductBatchUpdateResult>.Success(ToResult(batch, wasClaimed: false));
         }
 
+        var itemsToProcess = batch.Items
+            .Where(item => item.Status != ProductUpdateBatchItemStatus.Processed)
+            .ToArray();
+
+        if (itemsToProcess.Length == 0)
+        {
+            return Result<ProcessProductBatchUpdateResult>.Success(ToResult(batch, wasClaimed: true));
+        }
+
         var products = await _store.ListProductsByItemIdsAsync(
             batch.TenantId,
-            batch.Items.Select(item => item.ItemId).ToArray(),
+            itemsToProcess.Select(item => item.ItemId).ToArray(),
             ct);
 
         var productByItemId = products.ToDictionary(
             product => product.ItemId.Value,
             StringComparer.Ordinal);
 
-        foreach (var item in batch.Items)
+        foreach (var item in itemsToProcess)
         {
             try
             {

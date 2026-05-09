@@ -103,6 +103,12 @@ Check batch status:
 GET /api/products/batches/{batchId}
 ```
 
+Retry failed batch items:
+
+```http
+POST /api/products/batches/{batchId}/retry
+```
+
 List final products for a tenant:
 
 ```http
@@ -152,6 +158,7 @@ http://localhost:8088
 - The local implementation uses a DB-backed worker. RabbitMQ can be enabled as an optional transport for integration events.
 - Background processing is designed to be at-least-once, so product upserts and batch processing are idempotent.
 - Failures are handled with retry state, outbox retry, and RabbitMQ dead-letter support.
+- Failed or partially failed batches can be retried. Successful items remain processed; only failed items are reset and picked up by the worker again.
 
 ## Template Documentation
 

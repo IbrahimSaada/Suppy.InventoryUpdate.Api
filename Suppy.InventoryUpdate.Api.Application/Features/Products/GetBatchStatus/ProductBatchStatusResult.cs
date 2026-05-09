@@ -7,6 +7,7 @@ public sealed record ProductBatchStatusResult(
     int TotalItems,
     int ProcessedItems,
     int FailedItems,
+    bool CanRetry,
     DateTime CreatedAtUtc,
     DateTime? ProcessingStartedAtUtc,
     DateTime? CompletedAtUtc,

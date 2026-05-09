@@ -119,6 +119,37 @@ public sealed class ProductUpdateBatch : TenantScopedAggregateRoot
             FailedItems));
     }
 
+    public int RetryFailedItems(DateTime utcNow)
+    {
+        if (Status is not (ProductUpdateBatchStatus.Failed or ProductUpdateBatchStatus.PartiallyFailed))
+        {
+            throw new InvalidOperationException(
+                $"Only failed or partially failed batches can be retried. Current status is '{Status}'.");
+        }
+
+        var retryCount = 0;
+        foreach (var item in _items)
+        {
+            if (item.ResetFailedForRetry(utcNow))
+            {
+                retryCount++;
+            }
+        }
+
+        if (retryCount == 0)
+        {
+            throw new InvalidOperationException("Batch has no failed items to retry.");
+        }
+
+        FailedItems = Math.Max(0, FailedItems - retryCount);
+        Status = ProductUpdateBatchStatus.Accepted;
+        FailureReason = null;
+        CompletedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+
+        return retryCount;
+    }
+
     private static int EnsureValidItems(IReadOnlyCollection<ProductUpdateBatchItemDraft> itemDrafts)
     {
         ArgumentNullException.ThrowIfNull(itemDrafts);

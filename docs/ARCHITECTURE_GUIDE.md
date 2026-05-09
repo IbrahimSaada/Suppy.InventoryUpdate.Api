@@ -73,6 +73,16 @@ It runs outside the HTTP request:
 - marks each item as `Processed` or `Failed`
 - updates batch counters and final status
 
+The retry use case is `RetryProductBatchUpdateCommand`.
+
+It keeps retry behavior explicit:
+
+- only `Failed` and `PartiallyFailed` batches can be retried
+- only failed items are reset to `Pending`
+- already processed items stay processed
+- the batch status returns to `Accepted`
+- the existing background worker processes the retry asynchronously
+
 The read use case is `ListProductsQuery`.
 
 It is intentionally read-only:
@@ -184,6 +194,12 @@ Product read API:
 GET /api/products?tenantId=tenant_1&page=1&pageSize=50
 ```
 
+Retry API:
+
+```http
+POST /api/products/batches/{batchId}/retry
+```
+
 ## Failure Handling
 
 - API validation failures return `400`.
@@ -191,12 +207,15 @@ GET /api/products?tenantId=tenant_1&page=1&pageSize=50
 - Outbox publish failures are retried with backoff.
 - Background worker failures are logged and retried on the next polling cycle when the transaction rolls back.
 - RabbitMQ consumer failures are retried or dead-lettered when RabbitMQ is enabled.
+- Item-level failures are stored on `ProductUpdateBatchItem.ErrorMessage`.
+- Failed or partially failed batches expose `canRetry = true` from the batch status endpoint.
 - Batch item failures are recorded without crashing the entire process.
 - Failed items can be inspected through batch status endpoints.
 
 ## Retry Strategy
 
 - Background worker polling retries accepted batches that were not successfully committed.
+- Manual retry resets failed items and makes the batch accepted again.
 - Outbox dispatcher retries publishing pending integration messages.
 - RabbitMQ dead-letter queue stores messages that cannot be processed when RabbitMQ is enabled.
 - Product upsert logic is idempotent so retries are safe.

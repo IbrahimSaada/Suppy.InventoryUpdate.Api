@@ -127,6 +127,6 @@ Current project decisions:
 - [x] duplicate request with same tenant idempotency key does not create duplicate processing
 - [x] one tenant cannot affect another tenant's product rows
 - [x] background processing updates batch status
-- [ ] failures are recorded and retryable
+- [x] failures are recorded and retryable
 - [x] README explains architecture, flow, failures, retries, idempotency, and tradeoffs
 - [ ] Docker/local infrastructure instructions are clear

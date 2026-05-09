@@ -4,6 +4,7 @@ using System.Text.Json;
 using Suppy.InventoryUpdate.Api.Application.Dispatching;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.GetBatchStatus;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.ListProducts;
+using Suppy.InventoryUpdate.Api.Application.Features.Products.RetryBatchUpdate;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.SubmitBatchUpdate;
 using Suppy.InventoryUpdate.Api.Presentation;
 using Microsoft.AspNetCore.Mvc;
@@ -67,6 +68,23 @@ public sealed class ProductsController : ControllerBase
     {
         var result = await _dispatcher.Send(new GetProductBatchStatusQuery(batchId), ct);
         return this.ToActionResult(result, "Product batch status fetched.");
+    }
+
+    [HttpPost("batches/{batchId:guid}/retry")]
+    [ProducesResponseType(typeof(ApiEnvelope<RetryProductBatchUpdateResult>), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(ApiEnvelope<ApiErrorPayload>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiEnvelope<ApiErrorPayload>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> RetryBatch(Guid batchId, CancellationToken ct)
+    {
+        var result = await _dispatcher.Send(new RetryProductBatchUpdateCommand(batchId), ct);
+        if (result.IsFailure)
+        {
+            return this.ToActionResult(result);
+        }
+
+        return Accepted(ApiEnvelope<RetryProductBatchUpdateResult>.Success(
+            result.Value,
+            "Product batch retry accepted for background processing."));
     }
 
     private static IReadOnlyCollection<SubmitProductBatchUpdateItem> MapItems(

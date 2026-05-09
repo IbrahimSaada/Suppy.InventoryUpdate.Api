@@ -96,6 +96,23 @@ public sealed class ProductUpdateBatchItem : TenantScopedEntity
         return true;
     }
 
+    public bool ResetFailedForRetry(DateTime utcNow)
+    {
+        if (Status != ProductUpdateBatchItemStatus.Failed)
+        {
+            return false;
+        }
+
+        Status = ProductUpdateBatchItemStatus.Pending;
+        ErrorMessage = null;
+        ProcessingStartedAtUtc = null;
+        ProcessedAtUtc = null;
+        FailedAtUtc = null;
+        UpdatedAtUtc = utcNow;
+
+        return true;
+    }
+
     private static Guid EnsureNonEmptyBatchId(Guid batchId)
     {
         if (batchId == Guid.Empty)
