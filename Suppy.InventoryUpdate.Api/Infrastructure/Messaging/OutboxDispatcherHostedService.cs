@@ -60,7 +60,7 @@ internal sealed class OutboxDispatcherHostedService : BackgroundService
 
     private async Task DispatchBatchAsync(CancellationToken ct)
     {
-        using var scope = _scopeFactory.CreateScope();
+        await using var scope = _scopeFactory.CreateAsyncScope();
         var outboxStore = scope.ServiceProvider.GetRequiredService<IOutboxStore>();
 
         var now = _clock.UtcNow;

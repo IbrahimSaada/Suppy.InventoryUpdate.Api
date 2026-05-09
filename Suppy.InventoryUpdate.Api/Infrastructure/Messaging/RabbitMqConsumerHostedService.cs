@@ -252,7 +252,7 @@ internal sealed class RabbitMqConsumerHostedService : BackgroundService
         IIntegrationEvent integrationEvent,
         CancellationToken ct)
     {
-        using var scope = _scopeFactory.CreateScope();
+        await using var scope = _scopeFactory.CreateAsyncScope();
 
         var consumerInterface = typeof(IIntegrationEventConsumer<>).MakeGenericType(eventType);
         var consumers = scope.ServiceProvider.GetServices(consumerInterface).ToArray();
@@ -393,7 +393,11 @@ internal sealed class RabbitMqConsumerHostedService : BackgroundService
     {
         if (!string.IsNullOrWhiteSpace(integrationEvent.IdempotencyKey))
         {
-            return $"integration:{integrationEvent.IdempotencyKey}";
+            var tenantScope = string.IsNullOrWhiteSpace(integrationEvent.TenantId)
+                ? "tenant:unknown"
+                : $"tenant:{integrationEvent.TenantId}";
+
+            return $"integration:{tenantScope}:{integrationEvent.IdempotencyKey}";
         }
 
         var messageId = eventArgs.BasicProperties?.MessageId;

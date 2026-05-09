@@ -54,7 +54,7 @@ internal sealed class ProductBatchProcessingWorker : BackgroundService
 
     private async Task ProcessPendingBatchesAsync(CancellationToken ct)
     {
-        using var scope = _scopeFactory.CreateScope();
+        await using var scope = _scopeFactory.CreateAsyncScope();
 
         var processingStore = scope.ServiceProvider.GetRequiredService<IProductBatchProcessingStore>();
         var dispatcher = scope.ServiceProvider.GetRequiredService<IRequestDispatcher>();
