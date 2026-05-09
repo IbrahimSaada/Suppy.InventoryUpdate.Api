@@ -40,3 +40,9 @@ GET {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products/batches/{{batchId}}
 Accept: application/json
 
 ###
+
+### List products by tenant
+GET {{Suppy.InventoryUpdate.Api_HostAddress}}/api/products?tenantId=tenant_1&page=1&pageSize=50
+Accept: application/json
+
+###

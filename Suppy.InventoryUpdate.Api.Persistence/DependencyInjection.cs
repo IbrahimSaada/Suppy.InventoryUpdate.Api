@@ -59,6 +59,7 @@ public static class DependencyInjection
         services.AddGenericEfRepositories<AppDbContext>();
         services.AddScoped<IOutboxStore, EfOutboxStore>();
         services.AddScoped<IProductBatchProcessingStore, EfProductBatchProcessingStore>();
+        services.AddScoped<IProductReadStore, EfProductReadStore>();
 
         return services;
     }
@@ -107,6 +108,7 @@ public static class DependencyInjection
         services.AddGenericEfRepositories<AppDbContext>();
         services.AddScoped<IOutboxStore, EfOutboxStore>();
         services.AddScoped<IProductBatchProcessingStore, EfProductBatchProcessingStore>();
+        services.AddScoped<IProductReadStore, EfProductReadStore>();
 
         return services;
     }

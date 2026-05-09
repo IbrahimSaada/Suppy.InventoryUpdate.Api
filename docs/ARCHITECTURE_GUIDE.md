@@ -73,6 +73,15 @@ It runs outside the HTTP request:
 - marks each item as `Processed` or `Failed`
 - updates batch counters and final status
 
+The read use case is `ListProductsQuery`.
+
+It is intentionally read-only:
+
+- accepts `tenantId`, `page`, and `pageSize`
+- validates tenant and pagination limits
+- reads only that tenant's product rows
+- returns pagination metadata so high-volume tenants can be browsed safely
+
 ## Data Flow
 
 ```text
@@ -167,6 +176,12 @@ Feature-specific mappings still own business indexes, for example:
 ```text
 Products: unique (TenantId, ItemId)
 Batches:  unique (TenantId, IdempotencyKey)
+```
+
+Product read API:
+
+```http
+GET /api/products?tenantId=tenant_1&page=1&pageSize=50
 ```
 
 ## Failure Handling

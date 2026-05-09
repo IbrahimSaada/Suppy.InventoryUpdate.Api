@@ -103,6 +103,12 @@ Check batch status:
 GET /api/products/batches/{batchId}
 ```
 
+List final products for a tenant:
+
+```http
+GET /api/products?tenantId=tenant_1&page=1&pageSize=50
+```
+
 ## Local Infrastructure
 
 Redis:
@@ -139,6 +145,7 @@ http://localhost:8088
 
 - Tenant isolation is enforced by storing `TenantId` on tenant-owned tables.
 - Product identity is tenant-scoped: `(TenantId, ItemId)`.
+- Product listing is tenant-scoped and paginated.
 - Request idempotency is tenant-scoped: `(TenantId, IdempotencyKey)`.
 - Clients should send `Idempotency-Key`; if omitted, the API creates a deterministic payload hash fallback for the simplified assessment flow.
 - The batch endpoint returns `202 Accepted`; processing happens asynchronously.

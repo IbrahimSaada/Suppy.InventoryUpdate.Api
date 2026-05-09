@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using Suppy.InventoryUpdate.Api.Application.Dispatching;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.GetBatchStatus;
+using Suppy.InventoryUpdate.Api.Application.Features.Products.ListProducts;
 using Suppy.InventoryUpdate.Api.Application.Features.Products.SubmitBatchUpdate;
 using Suppy.InventoryUpdate.Api.Presentation;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +45,19 @@ public sealed class ProductsController : ControllerBase
             : "Product batch accepted for background processing.";
 
         return Accepted(ApiEnvelope<SubmitProductBatchUpdateResult>.Success(result.Value, message));
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(ApiEnvelope<ListProductsResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiEnvelope<ApiErrorPayload>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ListProducts(
+        [FromQuery] string tenantId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50,
+        CancellationToken ct = default)
+    {
+        var result = await _dispatcher.Send(new ListProductsQuery(tenantId, page, pageSize), ct);
+        return this.ToActionResult(result, "Products fetched.");
     }
 
     [HttpGet("batches/{batchId:guid}")]
