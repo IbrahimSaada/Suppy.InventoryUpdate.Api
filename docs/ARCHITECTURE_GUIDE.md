@@ -64,6 +64,37 @@ OutboxMessages
   stores integration events before RabbitMQ publish
 ```
 
+## Domain Model
+
+The domain starts with three tenant-scoped concepts:
+
+- `Product` stores the current product state for one tenant and one external item id.
+- `ProductUpdateBatch` stores the accepted request and tracks asynchronous processing progress.
+- `ProductUpdateBatchItem` stores each requested product update and its individual processing result.
+
+Value objects keep boundary data consistent:
+
+- `TenantId` normalizes and validates tenant identity.
+- `ItemId` validates the external item id from the tenant.
+- `BatchIdempotencyKey` stores optional request idempotency safely.
+
+Batch status is explicit:
+
+```text
+Accepted -> Processing -> Completed
+Accepted -> Processing -> PartiallyFailed
+Accepted -> Processing -> Failed
+```
+
+Each item is also tracked independently:
+
+```text
+Pending -> Processing -> Processed
+Pending -> Processing -> Failed
+```
+
+This lets one bad item fail without losing the full batch history.
+
 ## Tenant Isolation
 
 The simplified implementation uses shared database and shared tables with `TenantId` on tenant-owned records.
