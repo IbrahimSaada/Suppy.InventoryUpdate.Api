@@ -1,5 +1,6 @@
 using Suppy.InventoryUpdate.Api.Abstractions.Messaging;
 using Suppy.InventoryUpdate.Api.Abstractions.Persistence;
+using Suppy.InventoryUpdate.Api.Abstractions.Products;
 using Suppy.InventoryUpdate.Api.Abstractions.Results;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Errors;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Handlers;
@@ -13,13 +14,16 @@ internal sealed class SubmitProductBatchUpdateCommandHandler
     : ICommandHandler<SubmitProductBatchUpdateCommand, SubmitProductBatchUpdateResult>
 {
     private readonly IRepository<ProductUpdateBatch, Guid> _batchRepository;
+    private readonly IProductBatchProcessingStore _processingStore;
     private readonly IIntegrationEventPublisher _integrationEventPublisher;
 
     public SubmitProductBatchUpdateCommandHandler(
         IRepository<ProductUpdateBatch, Guid> batchRepository,
+        IProductBatchProcessingStore processingStore,
         IIntegrationEventPublisher integrationEventPublisher)
     {
         _batchRepository = batchRepository;
+        _processingStore = processingStore;
         _integrationEventPublisher = integrationEventPublisher;
     }
 
@@ -50,14 +54,9 @@ internal sealed class SubmitProductBatchUpdateCommandHandler
 
         if (idempotencyKey is not null)
         {
-            var existingBatch = await _batchRepository.FirstOrDefaultAsync(
-                batch =>
-                    batch.TenantId.Value == tenantId.Value &&
-                    batch.IdempotencyKey != null &&
-                    batch.IdempotencyKey.Value == idempotencyKey.Value,
-                includeDeleted: false,
-                asNoTracking: true,
-                includes: null,
+            var existingBatch = await _processingStore.GetBatchByIdempotencyKeyAsync(
+                tenantId,
+                idempotencyKey,
                 ct);
 
             if (existingBatch is not null)

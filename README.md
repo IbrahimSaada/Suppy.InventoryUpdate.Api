@@ -12,7 +12,7 @@ Assessment checklist:
 docs/ASSESSMENT_REQUIREMENTS.md
 ```
 
-## Planned Request Flow
+## Request Flow
 
 ```text
 Tenant client
@@ -20,8 +20,7 @@ Tenant client
   -> validation + tenant-scoped idempotency
   -> save ProductUpdateBatch + ProductUpdateBatchItems + OutboxMessage
   -> return 202 Accepted
-  -> outbox dispatcher publishes integration event
-  -> RabbitMQ consumer processes batch
+  -> DB-backed background worker claims accepted batches
   -> upsert Products by TenantId + ItemId
   -> update batch status
 ```
@@ -33,8 +32,8 @@ API
   -> Application commands/queries
   -> Domain aggregates
   -> Persistence + generic repository + Unit of Work
-  -> Outbox
-  -> RabbitMQ background consumer
+  -> DB-backed background worker
+  -> Outbox/RabbitMQ optional integration events
   -> PostgreSQL
 
 Redis is used for cache, distributed locks, and idempotency support.
@@ -76,6 +75,34 @@ Swagger:
 http://localhost:5253/swagger
 ```
 
+Submit a batch:
+
+```http
+POST /api/products/batch-update
+Idempotency-Key: tenant-1-batch-001
+Content-Type: application/json
+
+{
+  "tenantId": "tenant_1",
+  "items": [
+    {
+      "itemId": "123",
+      "price": 100,
+      "stock": 50,
+      "metadata": {
+        "source": "assessment-demo"
+      }
+    }
+  ]
+}
+```
+
+Check batch status:
+
+```http
+GET /api/products/batches/{batchId}
+```
+
 ## Local Infrastructure
 
 Redis:
@@ -113,8 +140,10 @@ http://localhost:8088
 - Tenant isolation is enforced by storing `TenantId` on tenant-owned tables.
 - Product identity is tenant-scoped: `(TenantId, ItemId)`.
 - Request idempotency is tenant-scoped: `(TenantId, IdempotencyKey)`.
-- The batch endpoint should return `202 Accepted`; processing happens asynchronously.
-- Background delivery is at-least-once, so product upserts and batch processing must be idempotent.
+- Clients should send `Idempotency-Key`; if omitted, the API creates a deterministic payload hash fallback for the simplified assessment flow.
+- The batch endpoint returns `202 Accepted`; processing happens asynchronously.
+- The local implementation uses a DB-backed worker. RabbitMQ can be enabled as an optional transport for integration events.
+- Background processing is designed to be at-least-once, so product upserts and batch processing are idempotent.
 - Failures are handled with retry state, outbox retry, and RabbitMQ dead-letter support.
 
 ## Template Documentation

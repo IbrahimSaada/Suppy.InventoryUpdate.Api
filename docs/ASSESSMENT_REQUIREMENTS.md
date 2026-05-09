@@ -118,15 +118,15 @@ Current project decisions:
 
 ## Acceptance Checklist
 
-- [ ] `POST /api/products/batch-update` exists
-- [ ] request validation rejects invalid tenant, empty items, invalid price, invalid stock
-- [ ] endpoint returns `202 Accepted`, not synchronous processing result
-- [ ] batch record is stored
-- [ ] batch items are stored
-- [ ] products are created or updated in DB by `(TenantId, ItemId)`
-- [ ] duplicate request with same tenant idempotency key does not create duplicate processing
-- [ ] one tenant cannot affect another tenant's product rows
-- [ ] background processing updates batch status
+- [x] `POST /api/products/batch-update` exists
+- [x] request validation rejects invalid tenant, empty items, invalid price, invalid stock
+- [x] endpoint returns `202 Accepted`, not synchronous processing result
+- [x] batch record is stored
+- [x] batch items are stored
+- [x] products are created or updated in DB by `(TenantId, ItemId)`
+- [x] duplicate request with same tenant idempotency key does not create duplicate processing
+- [x] one tenant cannot affect another tenant's product rows
+- [x] background processing updates batch status
 - [ ] failures are recorded and retryable
-- [ ] README explains architecture, flow, failures, retries, idempotency, and tradeoffs
+- [x] README explains architecture, flow, failures, retries, idempotency, and tradeoffs
 - [ ] Docker/local infrastructure instructions are clear

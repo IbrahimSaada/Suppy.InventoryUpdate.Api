@@ -5,6 +5,7 @@ using Suppy.InventoryUpdate.Api.Infrastructure;
 using Suppy.InventoryUpdate.Api.Infrastructure.Caching;
 using Suppy.InventoryUpdate.Api.Infrastructure.Messaging;
 using Suppy.InventoryUpdate.Api.Infrastructure.Observability;
+using Suppy.InventoryUpdate.Api.Infrastructure.Products;
 using Suppy.InventoryUpdate.Api.Infrastructure.Tenancy;
 using Suppy.InventoryUpdate.Api.Persistence;
 using Suppy.InventoryUpdate.Api.Security.DependencyInjection;
@@ -66,6 +67,7 @@ builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddScoped<IUnitOfWork, NoOpUnitOfWork>();
 
 ConfigurePersistence(builder);
+ConfigureProductBatchProcessing(builder);
 
 var app = builder.Build();
 
@@ -120,6 +122,17 @@ static void ConfigurePersistence(WebApplicationBuilder builder)
     {
         builder.Services.AddMongoPersistence(builder.Configuration);
     }
+}
+
+static void ConfigureProductBatchProcessing(WebApplicationBuilder builder)
+{
+    builder.Services.AddOptions<ProductBatchProcessingOptions>()
+        .Bind(builder.Configuration.GetSection(ProductBatchProcessingOptions.SectionName))
+        .Validate(options => options.BatchSize > 0, "ProductBatchProcessing:BatchSize must be greater than zero.")
+        .Validate(options => options.PollIntervalSeconds > 0, "ProductBatchProcessing:PollIntervalSeconds must be greater than zero.")
+        .ValidateOnStart();
+
+    builder.Services.AddHostedService<ProductBatchProcessingWorker>();
 }
 
 public partial class Program;

@@ -1,8 +1,10 @@
 using Suppy.InventoryUpdate.Api.Abstractions.Messaging;
+using Suppy.InventoryUpdate.Api.Abstractions.Products;
 using Suppy.InventoryUpdate.Api.GenericRepo.Ef;
 using Suppy.InventoryUpdate.Api.GenericRepo.Mongo;
 using Suppy.InventoryUpdate.Api.Persistence.Configuration;
 using Suppy.InventoryUpdate.Api.Persistence.Outbox;
+using Suppy.InventoryUpdate.Api.Persistence.Products;
 using Suppy.InventoryUpdate.Api.Persistence.Sql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -56,6 +58,7 @@ public static class DependencyInjection
 
         services.AddGenericEfRepositories<AppDbContext>();
         services.AddScoped<IOutboxStore, EfOutboxStore>();
+        services.AddScoped<IProductBatchProcessingStore, EfProductBatchProcessingStore>();
 
         return services;
     }
@@ -103,6 +106,7 @@ public static class DependencyInjection
 
         services.AddGenericEfRepositories<AppDbContext>();
         services.AddScoped<IOutboxStore, EfOutboxStore>();
+        services.AddScoped<IProductBatchProcessingStore, EfProductBatchProcessingStore>();
 
         return services;
     }

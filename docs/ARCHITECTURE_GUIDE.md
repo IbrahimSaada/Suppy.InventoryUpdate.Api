@@ -16,9 +16,7 @@ Tenant client
   -> batch persistence
   -> outbox persistence
   -> 202 Accepted
-  -> outbox dispatcher
-  -> RabbitMQ
-  -> background consumer
+  -> DB-backed background worker
   -> product upsert
   -> batch status update
 ```
@@ -43,10 +41,12 @@ Domain has no dependency on infrastructure. Application depends on contracts and
 5. Application publishes an integration event through the outbox.
 6. Unit of Work commits batch rows and outbox row atomically.
 7. API returns `202 Accepted` with `batchId`.
-8. Outbox dispatcher publishes the event to RabbitMQ.
-9. RabbitMQ consumer loads the batch and processes items in the background.
+8. The DB-backed background worker polls accepted batch ids.
+9. The worker dispatches `ProcessProductBatchUpdateCommand` for each accepted batch.
 10. Products are upserted by `(TenantId, ItemId)`.
 11. Batch status becomes `Completed`, `PartiallyFailed`, or `Failed`.
+
+RabbitMQ remains available as an optional transport for integration events. The core assessment flow does not require the HTTP request to wait on RabbitMQ.
 
 ## Application Use Case
 
@@ -62,6 +62,16 @@ It is intentionally limited to acceptance work:
 - return the accepted `batchId` and status
 
 It does not update `Product` rows directly. Product updates are handled by the background processor after the batch has been accepted.
+
+The processing use case is `ProcessProductBatchUpdateCommand`.
+
+It runs outside the HTTP request:
+
+- claims only `Accepted` batches before processing
+- loads batch items
+- upserts `Product` rows by `(TenantId, ItemId)`
+- marks each item as `Processed` or `Failed`
+- updates batch counters and final status
 
 ## Data Flow
 
@@ -164,14 +174,16 @@ Batches:  unique (TenantId, IdempotencyKey)
 - API validation failures return `400`.
 - Duplicate idempotent submissions return the existing batch result.
 - Outbox publish failures are retried with backoff.
-- RabbitMQ consumer failures are retried or dead-lettered.
+- Background worker failures are logged and retried on the next polling cycle when the transaction rolls back.
+- RabbitMQ consumer failures are retried or dead-lettered when RabbitMQ is enabled.
 - Batch item failures are recorded without crashing the entire process.
 - Failed items can be inspected through batch status endpoints.
 
 ## Retry Strategy
 
-- Outbox dispatcher retries publishing pending messages.
-- RabbitMQ dead-letter queue stores messages that cannot be processed.
+- Background worker polling retries accepted batches that were not successfully committed.
+- Outbox dispatcher retries publishing pending integration messages.
+- RabbitMQ dead-letter queue stores messages that cannot be processed when RabbitMQ is enabled.
 - Product upsert logic is idempotent so retries are safe.
 - Batch counters and item statuses make partial failure visible.
 
@@ -184,6 +196,8 @@ TenantId + IdempotencyKey -> ProductUpdateBatch
 ```
 
 This allows two tenants to use the same key independently while preventing duplicate processing for the same tenant request.
+
+Clients should send the key through the `Idempotency-Key` header. The API also accepts a body `idempotencyKey` field. If neither is provided, the controller creates a deterministic `auto:<sha256>` key from the normalized payload so the assessment sample remains idempotent without adding extra required fields.
 
 ## Local Infrastructure
 

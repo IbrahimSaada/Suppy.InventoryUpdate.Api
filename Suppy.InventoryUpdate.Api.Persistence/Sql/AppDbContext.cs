@@ -1,5 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Suppy.InventoryUpdate.Api.Domain.Products.Entities;
+using Suppy.InventoryUpdate.Api.Domain.Products.ValueObjects;
+using Suppy.InventoryUpdate.Api.Domain.Tenancy;
 using Suppy.InventoryUpdate.Api.Persistence.Outbox;
 
 namespace Suppy.InventoryUpdate.Api.Persistence.Sql;
@@ -17,9 +20,16 @@ public sealed class AppDbContext : DbContext
     }
 
     internal DbSet<OutboxMessageEntity> OutboxMessages => Set<OutboxMessageEntity>();
+    internal DbSet<Product> Products => Set<Product>();
+    internal DbSet<ProductUpdateBatch> ProductUpdateBatches => Set<ProductUpdateBatch>();
+    internal DbSet<ProductUpdateBatchItem> ProductUpdateBatchItems => Set<ProductUpdateBatchItem>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Ignore<TenantId>();
+        modelBuilder.Ignore<ItemId>();
+        modelBuilder.Ignore<BatchIdempotencyKey>();
+
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
         modelBuilder.ApplyTemplateConventions();
 
