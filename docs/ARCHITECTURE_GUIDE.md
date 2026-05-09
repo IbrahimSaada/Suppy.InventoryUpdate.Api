@@ -50,6 +50,33 @@ Domain has no dependency on infrastructure. Application depends on contracts and
 
 RabbitMQ remains available as an optional transport for integration events. The core assessment flow does not require the HTTP request to wait on RabbitMQ.
 
+## Processing Modes
+
+The project supports two asynchronous processing modes.
+
+Default mode:
+
+```text
+POST request
+  -> batch rows
+  -> DB-backed background worker
+  -> product upsert
+```
+
+Bonus RabbitMQ mode:
+
+```text
+POST request
+  -> batch rows + outbox row
+  -> outbox dispatcher
+  -> RabbitMQ exchange
+  -> RabbitMQ consumer
+  -> ProcessProductBatchUpdateCommand
+  -> product upsert
+```
+
+RabbitMQ mode should be paired with Redis enabled. Redis is used by the consumer idempotency store so duplicate RabbitMQ deliveries do not reprocess the same message.
+
 ## Application Use Case
 
 The first use case is `SubmitProductBatchUpdateCommand`.
@@ -64,6 +91,8 @@ It is intentionally limited to acceptance work:
 - return the accepted `batchId` and status
 
 It does not update `Product` rows directly. Product updates are handled by the background processor after the batch has been accepted.
+
+`ProductBatchUpdateAcceptedIntegrationEventConsumer` handles the RabbitMQ bonus path. It consumes `ProductBatchUpdateAcceptedIntegrationEvent` and dispatches `ProcessProductBatchUpdateCommand`, keeping RabbitMQ transport code outside the domain model.
 
 The processing use case is `ProcessProductBatchUpdateCommand`.
 

@@ -1,4 +1,5 @@
 using System.Reflection;
+using Suppy.InventoryUpdate.Api.Abstractions.Messaging;
 using Suppy.InventoryUpdate.Api.Application.Behaviors;
 using Suppy.InventoryUpdate.Api.Application.Contracts.Handlers;
 using Suppy.InventoryUpdate.Api.Application.Dispatching;
@@ -16,6 +17,7 @@ public static class DependencyInjection
         var assembly = typeof(DependencyInjection).Assembly;
 
         RegisterClosedGenericImplementations(services, assembly, typeof(IRequestHandler<,>));
+        RegisterClosedGenericImplementations(services, assembly, typeof(IIntegrationEventConsumer<>));
         services.AddValidatorsFromAssembly(assembly, includeInternalTypes: true);
 
         services.AddScoped<IRequestDispatcher, RequestDispatcher>();

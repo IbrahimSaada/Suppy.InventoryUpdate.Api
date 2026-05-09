@@ -93,6 +93,14 @@ Bonus points if used:
 - cloud deployment
 - logging and monitoring
 
+Current bonus coverage:
+
+- [x] RabbitMQ optional transport path for accepted batch integration events
+- [x] Redis consumer idempotency when RabbitMQ mode is enabled
+- [x] Docker Compose local stack
+- [ ] Cloud deployment intentionally skipped
+- [ ] Logging/monitoring intentionally skipped beyond default application logging
+
 ## Extra Production Improvements
 
 Potential improvements:

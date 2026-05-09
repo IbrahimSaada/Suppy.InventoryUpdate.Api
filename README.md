@@ -26,6 +26,19 @@ Tenant client
   -> update batch status
 ```
 
+Bonus RabbitMQ mode:
+
+```text
+Tenant client
+  -> POST /api/products/batch-update
+  -> save ProductUpdateBatch + ProductUpdateBatchItems + OutboxMessage
+  -> return 202 Accepted
+  -> outbox dispatcher publishes to RabbitMQ
+  -> RabbitMQ consumer processes ProductBatchUpdateAcceptedIntegrationEvent
+  -> upsert Products by TenantId + ItemId
+  -> Redis-backed consumer idempotency prevents duplicate message handling
+```
+
 ## Architecture
 
 ```text
@@ -142,6 +155,27 @@ Full local infrastructure guide:
 docs/LOCAL_INFRASTRUCTURE.md
 ```
 
+## Bonus Mode: Redis + RabbitMQ
+
+The core assessment flow runs with the DB-backed worker by default. To demonstrate the Redis/RabbitMQ bonus path, run the Docker dev stack and start the API with these overrides:
+
+```powershell
+$env:ConnectionStrings__Postgres="Host=localhost;Port=5434;Database=suppy_inventory_update;Username=postgres;Password=ibrahim"
+$env:Redis__Enabled="true"
+$env:Redis__ConnectionString="localhost:6379"
+$env:Messaging__Provider="RabbitMq"
+$env:Messaging__RabbitMq__ConsumerEnabled="true"
+$env:ProductBatchProcessing__Enabled="false"
+dotnet run --project .\Suppy.InventoryUpdate.Api
+```
+
+In this mode:
+
+- HTTP request still returns `202 Accepted`.
+- The outbox dispatcher publishes the accepted batch event to RabbitMQ.
+- The RabbitMQ consumer processes the batch asynchronously.
+- Redis stores consumer idempotency state, so duplicate RabbitMQ deliveries are safe.
+
 ## Assessment Notes
 
 - Tenant isolation is enforced by storing `TenantId` on tenant-owned tables.
@@ -153,6 +187,8 @@ docs/LOCAL_INFRASTRUCTURE.md
 - Clients should send `X-Tenant-Id` so infrastructure can protect each tenant before request body processing.
 - The batch endpoint returns `202 Accepted`; processing happens asynchronously.
 - The local implementation uses a DB-backed worker. RabbitMQ can be enabled as an optional transport for integration events.
+- RabbitMQ mode is implemented through an integration-event consumer for accepted product batches.
+- Redis is used for RabbitMQ consumer idempotency when enabled.
 - Background processing is designed to be at-least-once, so product upserts and batch processing are idempotent.
 - Failures are handled with retry state, outbox retry, and RabbitMQ dead-letter support.
 - Failed or partially failed batches can be retried. Successful items remain processed; only failed items are reset and picked up by the worker again.

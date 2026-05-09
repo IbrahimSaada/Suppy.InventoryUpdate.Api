@@ -105,15 +105,26 @@ $env:Redis__ConnectionString="localhost:6379"
 
 RabbitMQ is disabled by default in development.
 
-To publish outbox messages to RabbitMQ:
+To process product batches through RabbitMQ instead of the DB-backed worker:
 
 ```powershell
+$env:ProductBatchProcessing__Enabled="false"
+$env:Redis__Enabled="true"
+$env:Redis__ConnectionString="localhost:6379"
 $env:Messaging__Provider="RabbitMq"
 $env:Messaging__RabbitMq__HostName="localhost"
 $env:Messaging__RabbitMq__Port="5672"
 $env:Messaging__RabbitMq__UserName="guest"
 $env:Messaging__RabbitMq__Password="guest"
-$env:Messaging__RabbitMq__ConsumerEnabled="false"
+$env:Messaging__RabbitMq__ConsumerEnabled="true"
+```
+
+Why Redis is enabled here:
+
+```text
+RabbitMQ delivery is at-least-once.
+Redis stores consumer idempotency state.
+Duplicate broker deliveries can be acknowledged safely without duplicate processing.
 ```
 
 RabbitMQ UI:
