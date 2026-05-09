@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Suppy.InventoryUpdate.Api.Domain.Tenancy;
 
 namespace Suppy.InventoryUpdate.Api.Persistence.Sql;
 
@@ -10,13 +11,38 @@ internal static class ModelBuilderExtensions
     private const string DeletedAtUtcProperty = "DeletedAtUtc";
     private const string CreatedAtUtcProperty = "CreatedAtUtc";
     private const string IdProperty = "Id";
+    private const string TenantIdProperty = "TenantId";
 
     public static void ApplyTemplateConventions(this ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
+        ApplyTenantConventions(modelBuilder);
         ApplySoftDeleteFilters(modelBuilder);
         ApplyIndexes(modelBuilder);
+    }
+
+    private static void ApplyTenantConventions(ModelBuilder modelBuilder)
+    {
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (!CanApplyConventions(entityType) ||
+                !HasProperty(entityType, TenantIdProperty, typeof(TenantId)))
+            {
+                continue;
+            }
+
+            var builder = modelBuilder.Entity(entityType.ClrType);
+
+            builder.Property<TenantId>(TenantIdProperty)
+                .HasConversion(
+                    tenantId => tenantId.Value,
+                    value => TenantId.From(value))
+                .HasMaxLength(TenantId.MaxLength)
+                .IsRequired();
+
+            builder.HasIndex(TenantIdProperty);
+        }
     }
 
     private static void ApplySoftDeleteFilters(ModelBuilder modelBuilder)

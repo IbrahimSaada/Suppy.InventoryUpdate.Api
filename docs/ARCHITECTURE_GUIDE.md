@@ -75,6 +75,42 @@ Important rules:
 
 In production, `TenantId` should normally come from an authenticated token, API key, or tenant routing layer. The assessment payload includes `tenantId`, so the simplified version accepts it from the request.
 
+## Tenant Foundation
+
+Tenant support is implemented as a first-class foundation:
+
+- `TenantId` is a domain value object.
+- Tenant IDs are trimmed and normalized to lowercase.
+- Tenant IDs are limited to 100 characters.
+- Allowed characters are lowercase letters, numbers, dot, dash, and underscore.
+- Tenant IDs must start with a letter or number.
+- Tenant-owned domain entities should implement `ITenantScoped`.
+- Tenant-owned aggregate roots can inherit from `TenantScopedAggregateRoot`.
+- Tenant-owned child entities can inherit from `TenantScopedEntity`.
+
+The API also exposes `ICurrentTenant` for future header/JWT-based tenant resolution:
+
+```text
+X-Tenant-Id header -> preferred local/dev source
+tenant_id claim   -> preferred production source after authentication
+```
+
+For this assessment endpoint, the request body still includes `tenantId`. The command handler should convert it to `TenantId` and store it on every tenant-owned row.
+
+Persistence applies a convention for tenant-scoped entities:
+
+```text
+TenantId value object -> required string column
+TenantId column       -> indexed
+```
+
+Feature-specific mappings still own business indexes, for example:
+
+```text
+Products: unique (TenantId, ItemId)
+Batches:  unique (TenantId, IdempotencyKey)
+```
+
 ## Failure Handling
 
 - API validation failures return `400`.

@@ -5,6 +5,7 @@ using Suppy.InventoryUpdate.Api.Infrastructure;
 using Suppy.InventoryUpdate.Api.Infrastructure.Caching;
 using Suppy.InventoryUpdate.Api.Infrastructure.Messaging;
 using Suppy.InventoryUpdate.Api.Infrastructure.Observability;
+using Suppy.InventoryUpdate.Api.Infrastructure.Tenancy;
 using Suppy.InventoryUpdate.Api.Persistence;
 using Suppy.InventoryUpdate.Api.Security.DependencyInjection;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -51,6 +52,7 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddApplication();
 builder.Services.AddTemplateObservability();
+builder.Services.AddTemplateTenancy();
 builder.Services.AddTemplateSecurity(builder.Configuration);
 builder.Services.AddTemplateCaching(builder.Configuration);
 builder.Services.AddTemplateMessaging(builder.Configuration);
