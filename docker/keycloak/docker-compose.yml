@@ -1,0 +1,23 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.4
+    container_name: suppy-inventory-keycloak
+    ports:
+      - "8088:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: host.docker.internal
+      KC_DB_URL_PORT: 5432
+      KC_DB_URL_DATABASE: suppy_inventory_keycloak
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: ibrahim
+
+      # Bootstrap admin is for first startup only.
+      # After creating a permanent admin account, remove these two variables
+      # and recreate the container to harden security.
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ibrahim
+    command: ["start-dev"]
+    restart: unless-stopped

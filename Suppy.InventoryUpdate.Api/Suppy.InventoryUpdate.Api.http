@@ -1,0 +1,14 @@
+@Suppy.InventoryUpdate.Api_HostAddress = http://localhost:5253
+@accessToken = paste_access_token_here
+
+### Liveness
+GET {{Suppy.InventoryUpdate.Api_HostAddress}}/health/live
+Accept: application/json
+
+###
+
+### Readiness
+GET {{Suppy.InventoryUpdate.Api_HostAddress}}/health/ready
+Accept: application/json
+
+###
